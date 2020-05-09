@@ -1,0 +1,110 @@
+CREATE TABLE books (
+	id serial PRIMARY KEY,
+	title varchar(120) NOT NULL,
+	price numeric NOT NULL,
+	warehouse varchar(50) NOT NULL,
+	quantity int
+);
+
+INSERT INTO books (title,price,warehouse,quantity) VALUES
+('Илиада',400,'Советский', 30),
+('Гамлет',500,'Нижегородский', 55),
+('Похвала глупости',300,'Сормовский', 17),
+('Идиот',450,'Автозаводский', 65),
+('Двенадцать стульев',800,'Приокский', 80),
+('Автостопом по галактике',2000,'Канавинский', 42),
+('Сумма технологии',1200,'Советский', 0),
+('Демиан',500,'Автозаводский', 12),
+('Windows 10 для чайников',550,'Московский', 31),
+('Внутреннее устройство Windows',1300,'Автозаводский', 16);
+
+
+CREATE TABLE buyers (
+	id serial PRIMARY KEY,
+	lastname varchar(40) NOT NULL,
+	district varchar(40) NOT NULL,
+	discount numeric
+);
+
+INSERT INTO buyers (lastname,district,discount) VALUES
+('Соловьев','Автозаводский', 5),
+('Лебедев','Нижегородский', 10),
+('Воробьева','Сормовский', 15),
+('Гусев','Ленинский', 5),
+('Воронов','Приокский', 7),
+('Грачев','Канавинский', 3),
+('Уткин','Советский', 10),
+('Синицина','Московский', 5),
+('Сорокина','Нижегородский', 15),
+('Соколова','Советский', 5);
+
+
+CREATE TABLE shop(
+	id serial PRIMARY KEY,
+	Name varchar(50) NOT NULL,
+	district varchar(50) NOT NULL,
+	Commission numeric NOT NULL
+);
+
+INSERT INTO shop (name,district,commission) VALUES
+('Читай-город','Автозаводский',10),
+('Дирижабль','Нижегородский',5),
+('Читайна','Сормоский', 10),
+('Читай-город','Ленинский',5),
+('Читайна','Канавинский',5),
+('Читайна','Московский',15);
+
+CREATE TABLE purchases(
+	id serial PRIMARY KEY,
+	saledate date NOT NULL,
+	seller int NOT NULL REFERENCES shop (id),
+	buyer int NOT NULL REFERENCES buyers (id),
+	book int NOT NULL REFERENCES books (id),
+	quantity int NOT NULL
+);
+
+INSERT INTO public.purchases(saledate, seller, buyer, book, quantity)
+	VALUES
+	('2019-01-05',1,1,3,1),
+	('2019-02-12',1,1,4,2),
+	('2019-03-22',1,1,5,1),
+	('2019-04-19',2,3,1,5),
+	('2019-10-27',3,4,2,1),
+	('2019-12-13',4,1,8,1),
+	('2020-02-07',5,5,5,1),
+	('2020-03-03',6,6,7,2),
+	('2020-03-07',6,7,3,1),
+	('2020-04-12',6,10,2,1);
+
+
+	CREATE OR REPLACE FUNCTION update_sale_with_cost_view() RETURNS TRIGGER AS $$
+    BEGIN
+			IF (TG_OP = 'DELETE') THEN
+				DELETE FROM purchase WHERE purchase.id = OLD.id;
+				return OLD;
+			ELSIF (TG_OP = 'UPDATE') THEN
+				UPDATE purchase SET saledate = NEW.saledate,
+								seller = NEW.seller,
+								buyer = NEW.buyer,
+								book = NEW.book,
+								quantity = NEW.quantity
+				WHERE id = OLD.id;
+				RETURN NEW;
+			ELSIF (TG_OP = 'INSERT') THEN
+				INSERT INTO purchase(saledate,seller,buyer,book,quantity) VALUES(NEW.saledate,NEW.seller,NEW.buyer,NEW.book,NEW.quantity);
+				return NEW;
+			END IF;
+    END;
+$$ LANGUAGE plpgsql;
+
+
+	CREATE VIEW sale_with_cost AS
+	SELECT s.*,c.discount/100*(b.price+(b.price*shop.commission/100)) AS sale_cost
+	FROM purchases s JOIN books b ON s.book = b.id
+				JOIN buyers c ON s.buyer = c.id
+					JOIN shop ON s.seller = shop.id;
+	CREATE TRIGGER view_sale_update_tg
+    INSTEAD OF INSERT OR DELETE OR UPDATE
+    ON public.sale_with_cost
+    FOR EACH ROW
+    EXECUTE PROCEDURE public.update_sale_with_cost_view();
