@@ -1,42 +1,45 @@
 package com.letchic.service;
 
 import com.letchic.model.Book;
-import com.letchic.model.Purchase;
+import com.letchic.model.Purchases;
 import com.letchic.model.Shop;
 import com.letchic.repository.PurchaseRepository;
+import com.letchic.views.LastNameAndShopTitleView;
+import com.letchic.views.MonthView;
+import com.letchic.views.PurchaseView;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-public class PurchaseService extends AbstractService<Purchase, PurchaseRepository> {
+public class PurchaseService extends AbstractService<Purchases, PurchaseRepository> {
 
     @Autowired
     private PurchaseRepository purchaseRepository;
 
-    public List<String> monthsOfSale() {
+   public List<MonthView> monthsOfSale() {
         return purchaseRepository.monthsOfSale();
     }
 
-    public List<Object[]> getSecNameAndTitleForSale() {
-        return purchaseRepository.getSecNameAndTitleForSale();
+    public List<LastNameAndShopTitleView> getLastNameAndTitleForSale() {
+        return purchaseRepository.getLastNameAndTitleForSale();
     }
 
-    public List<Object[]> getSacNameDateDiscountBookTitleAndQuantity() {
+    public List<PurchaseView> getLastNameDateDiscountBookTitleAndQuantity() {
         return purchaseRepository.getSacNameDateDiscountBookTitleAndQuantity();
     }
 
-    public List<Object[]> getSaleIdCustomerAndDateForSaleCost(double saleCostLevel) {
-        return purchaseRepository.getSaleIdCustomerAndDateForSaleCost(saleCostLevel);
+    public List<PurchaseView> getSaleIdBuyerAndDateForSaleCost(double saleCost) {
+        return purchaseRepository.getSaleIdBuyerAndDateForSaleCost(saleCost);
     }
 
-    public List<Object[]> getSaleInCustomerNeighborhoodForMonth(int monthNumber) {
-        return purchaseRepository.getSaleInCustomerNeighborhoodForMonth(monthNumber);
+    public List<PurchaseView> getSaleInBuyerDistrictForMonth(int monthNumber) {
+        return purchaseRepository.getSaleInBuyerDistrictForMonth(monthNumber);
     }
 
-    public List<Shop> getStoreFromSaleForNeighborhood(String neighborhood) {
-        return purchaseRepository.getStoreFromSaleForNeighborhood(neighborhood);
+    public List<Shop> getShopFromSaleForDistrict(String neighborhood) {
+        return purchaseRepository.getShopFromSaleForDistrict(neighborhood);
     }
 
     public List<Book> getBookFromSaleForQuantity(int quantity){

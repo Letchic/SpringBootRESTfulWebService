@@ -1,3 +1,4 @@
+
 CREATE TABLE books (
 	id serial PRIMARY KEY,
 	title varchar(120) NOT NULL,
@@ -17,6 +18,7 @@ INSERT INTO books (title,price,warehouse,quantity) VALUES
 ('Демиан',500,'Автозаводский', 12),
 ('Windows 10 для чайников',550,'Московский', 31),
 ('Внутреннее устройство Windows',1300,'Автозаводский', 16);
+
 
 
 CREATE TABLE buyers (
@@ -54,6 +56,8 @@ INSERT INTO shop (name,district,commission) VALUES
 ('Читайна','Канавинский',5),
 ('Читайна','Московский',15);
 
+
+
 CREATE TABLE purchases(
 	id serial PRIMARY KEY,
 	saledate date NOT NULL,
@@ -77,6 +81,7 @@ INSERT INTO public.purchases(saledate, seller, buyer, book, quantity)
 	('2020-04-12',6,10,2,1);
 
 
+
 	CREATE OR REPLACE FUNCTION update_sale_with_cost_view() RETURNS TRIGGER AS $$
     BEGIN
 			IF (TG_OP = 'DELETE') THEN
@@ -98,8 +103,10 @@ INSERT INTO public.purchases(saledate, seller, buyer, book, quantity)
 $$ LANGUAGE plpgsql;
 
 
+
+
 	CREATE VIEW sale_with_cost AS
-	SELECT s.*,c.discount/100*(b.price+(b.price*shop.commission/100)) AS sale_cost
+	SELECT s.*,c.discount/100*(b.price+(b.price*shop.commission/100)) AS saleCost
 	FROM purchases s JOIN books b ON s.book = b.id
 				JOIN buyers c ON s.buyer = c.id
 					JOIN shop ON s.seller = shop.id;
@@ -108,3 +115,4 @@ $$ LANGUAGE plpgsql;
     ON public.sale_with_cost
     FOR EACH ROW
     EXECUTE PROCEDURE public.update_sale_with_cost_view();
+

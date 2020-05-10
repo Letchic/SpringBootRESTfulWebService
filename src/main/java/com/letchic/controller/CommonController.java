@@ -2,7 +2,6 @@ package com.letchic.controller;
 
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.fge.jsonpatch.JsonPatch;
 import com.github.fge.jsonpatch.JsonPatchException;
@@ -10,6 +9,7 @@ import com.letchic.exception.NoFoundException;
 import com.letchic.model.Common;
 import com.letchic.service.CommonService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,17 +31,11 @@ public abstract class CommonController<E extends Common, S extends CommonService
     @GetMapping("/find")
     public ResponseEntity<E> findById(@RequestParam int id) {
         try {
-            E entity = service.findById(id).orElseThrow(NoFoundException::new);
+            E entity = service.findById(id);
             return ResponseEntity.ok(entity);
         } catch (NoFoundException e) {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-    }
-
-    @DeleteMapping("/delete/{id}")
-    public HttpStatus delete(@PathVariable int id)  {
-        service.deleteById(id);
-        return HttpStatus.OK;
     }
 
     @PostMapping("/create")
@@ -50,18 +44,20 @@ public abstract class CommonController<E extends Common, S extends CommonService
         service.create(entity);
     }
 
-    @PutMapping("/update/{id}")
-    public ResponseEntity<E> update(@PathVariable int id, @RequestBody E entity) {
-        E updated = service.updateById(id, entity);
-        return ResponseEntity.ok(updated);
+    @DeleteMapping("/delete/{id}")
+    public HttpStatus delete(@PathVariable int id)  {
+        try {
+            service.deleteById(id);
+            return HttpStatus.OK;
+        } catch (EmptyResultDataAccessException e) {
+            return HttpStatus.NOT_FOUND;
+        }
     }
 
     @PatchMapping(path = "/patch/{id}", consumes = "application/json-patch+json")
     public ResponseEntity<E> patch(@PathVariable int id, @RequestBody JsonPatch patch) {
         try {
-            E entity = service.findById(id).orElseThrow(NoFoundException::new);
-            E entityPatched = applyPatchToEntity(patch, entity);
-            service.updateById(id, entityPatched);
+            E entityPatched = service.patch(id, patch);
             return ResponseEntity.ok(entityPatched);
         } catch (JsonPatchException | JsonProcessingException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -70,12 +66,11 @@ public abstract class CommonController<E extends Common, S extends CommonService
         }
     }
 
-    private E applyPatchToEntity(
-            JsonPatch patch, E targetEntity) throws JsonPatchException, JsonProcessingException {
-        JsonNode patched = patch.apply(objectMapper.convertValue(targetEntity, JsonNode.class));
-
-        return objectMapper.treeToValue(patched, getEType());
+    @PutMapping("/update/{id}")
+    public ResponseEntity<E> update(@PathVariable int id, @RequestBody E entity) {
+        E updated = service.updateById(id, entity);
+        return ResponseEntity.ok(updated);
     }
 
-    public abstract Class<E> getEType();
+
 }

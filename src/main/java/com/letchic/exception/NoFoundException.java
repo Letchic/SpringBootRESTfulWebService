@@ -9,7 +9,9 @@ public class NoFoundException extends Exception{
 
     public NoFoundException() {
     }
-
+    NoFoundException(String str) {
+        message = str;
+    }
     public String toString() {
         return ("Exception Occurred: " + message);
     }
